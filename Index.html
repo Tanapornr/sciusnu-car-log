@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>บันทึกการใช้รถ</title>
+  <style>
+    :root {font-family: system-ui, sans-serif; color:#17304d; background:#f3f7fb}
+    * {box-sizing:border-box}
+    body {margin:0}
+    main {max-width:780px; margin:0 auto; padding:24px 16px 64px}
+    header {background:#123e67; color:white; padding:28px 24px; border-radius:18px; margin-bottom:18px}
+    h1 {font-size:1.6rem; margin:0 0 6px}
+    h2 {font-size:1.2rem; margin:0 0 18px}
+    p {margin:0; line-height:1.5}
+    .card {background:white; border:1px solid #dce6f0; border-radius:18px; padding:22px; margin-top:16px; box-shadow:0 3px 14px #123e6709}
+    .tabs {display:flex; gap:8px}
+    .tabs button {flex:1; background:#e5edf5; color:#17304d}
+    .tabs button.active {background:#1564a6; color:white}
+    button {border:0; border-radius:11px; padding:13px 18px; font:inherit; font-weight:700; cursor:pointer}
+    button:disabled {opacity:.6; cursor:wait}
+    form {display:grid; grid-template-columns:1fr 1fr; gap:16px}
+    label {display:grid; gap:6px; font-weight:650}
+    input,select,textarea {width:100%; font:inherit; border:1px solid #b9cadd; border-radius:9px; padding:11px; background:white; color:#17304d}
+    input:focus,select:focus,textarea:focus {outline:2px solid #56a7e9; border-color:#1564a6}
+    .wide {grid-column:1/-1}
+    .hint {font-weight:400; color:#59738d; font-size:.88rem}
+    .submit {background:#1564a6; color:white}
+    .info {background:#eaf5ff; border-radius:11px; padding:12px 14px; line-height:1.5}
+    .status {margin-top:16px; padding:12px 14px; border-radius:10px; display:none; line-height:1.5}
+    .status.show {display:block}
+    .status.ok {background:#e7f6ec; color:#16542b}
+    .status.error {background:#fff0ef; color:#8a251b}
+    .summary {display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; color:#d6e9fa}
+    a {color:#1564a6}
+    [hidden] {display:none!important}
+    @media(max-width:540px) {form {grid-template-columns:1fr} header {padding:22px} .card {padding:18px}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>บันทึกการใช้รถราชการ</h1>
+    <p>ทะเบียน 40-0210 พิษณุโลก · วมว. มหาวิทยาลัยนเรศวร</p>
+    <div class="summary"><span id="tripCount">เที่ยวเดินทาง —</span><span id="fuelCount">รายการเติมน้ำมัน —</span><span id="efficiency">อัตราล่าสุด —</span></div>
+  </header>
+  <div class="tabs" role="tablist" aria-label="ประเภทบันทึก">
+    <button type="button" id="tripTab" class="active" role="tab" aria-selected="true">บันทึกการใช้รถ</button>
+    <button type="button" id="fuelTab" role="tab" aria-selected="false">เติมน้ำมัน</button>
+  </div>
+  <section class="card" id="tripPanel" role="tabpanel" aria-labelledby="tripTab">
+    <h2>บันทึกการใช้รถ</h2>
+    <form id="tripForm">
+      <label>วันที่ใช้รถ<input name="date" type="date" required></label>
+      <label>ผู้ขับรถ<input name="driver" autocomplete="name" maxlength="120" required></label>
+      <label class="wide">สถานที่และภารกิจ<input name="purpose" maxlength="300" required></label>
+      <label>เลขไมล์ออก (กม.)<input name="startOdometer" type="number" min="0" step="0.1" required><span class="hint" id="tripHint"></span></label>
+      <label>เลขไมล์กลับ (กม.)<input name="endOdometer" type="number" min="0" step="0.1" required></label>
+      <label class="wide">หมายเหตุ (ถ้ามี)<textarea name="note" rows="2" maxlength="300"></textarea></label>
+      <button class="submit wide" type="submit">บันทึกการใช้รถ</button>
+    </form>
+  </section>
+  <section class="card" id="fuelPanel" role="tabpanel" aria-labelledby="fuelTab" hidden>
+    <h2>บันทึกเติมน้ำมัน</h2>
+    <div class="info" id="fuelHint">กำลังอ่านเลขไมล์ล่าสุด…</div>
+    <form id="fuelForm" style="margin-top:18px">
+      <label>วันที่เติม<input name="date" type="date" required></label>
+      <label>เลขไมล์ขณะเติม (กม.)<input name="odometer" type="number" min="0" step="0.1" required><span class="hint">ตรวจเลขบนหน้าปัดก่อนกดบันทึก แก้ได้หากเติมระหว่างเที่ยว</span></label>
+      <label>จำนวนลิตร<input name="liters" type="number" min="0.001" step="0.001" required></label>
+      <label>ยอดจ่ายจริง (บาท)<input name="total" type="number" min="0.01" step="0.01" required></label>
+      <label>ลักษณะการเติม<select name="fillType" required><option value="เต็มถัง">เต็มถัง</option><option value="ไม่เต็มถัง">ไม่เต็มถัง</option></select></label>
+      <label>เลขที่ใบเสร็จ (ถ้ามี)<input name="receipt" maxlength="100"></label>
+      <p class="wide hint">ราคาต่อลิตรคำนวณจากยอดจ่าย ÷ จำนวนลิตร อัตรา กม./ลิตรจะแสดงเมื่อมีการเติมเต็มถังสองครั้ง โดยรวมลิตรที่เติมระหว่างรอบ</p>
+      <button class="submit wide" type="submit">บันทึกเติมน้ำมัน</button>
+    </form>
+  </section>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <p style="margin:18px 4px"><a id="sheetLink" target="_blank" rel="noopener">เปิดข้อมูลใน Google Sheets</a></p>
+</main>
+<script>
+  const tripForm = document.getElementById('tripForm');
+  const fuelForm = document.getElementById('fuelForm');
+  const status = document.getElementById('status');
+  const panels = [document.getElementById('tripPanel'), document.getElementById('fuelPanel')];
+  const tabs = [document.getElementById('tripTab'), document.getElementById('fuelTab')];
+  tabs.forEach((tab, index) => tab.addEventListener('click', () => {
+    panels.forEach((panel, i) => panel.hidden = i !== index);
+    tabs.forEach((button, i) => { button.classList.toggle('active', i === index); button.setAttribute('aria-selected', i === index); });
+    status.className = 'status';
+  }));
+
+  function message(text, error) {
+    status.textContent = text;
+    status.className = `status show ${error ? 'error' : 'ok'}`;
+  }
+  function refresh(context, resetDates) {
+    if (resetDates) { tripForm.elements.date.value = context.today; fuelForm.elements.date.value = context.today; }
+    document.getElementById('tripCount').textContent = `เที่ยวเดินทาง ${context.tripCount}`;
+    document.getElementById('fuelCount').textContent = `รายการเติมน้ำมัน ${context.fuelCount}`;
+    document.getElementById('efficiency').textContent = context.lastEfficiency ? `อัตราล่าสุด ${context.lastEfficiency} กม./ลิตร` : 'อัตราล่าสุด —';
+    document.getElementById('sheetLink').href = context.spreadsheetUrl;
+    const mileage = context.suggestedOdometer;
+    const hint = mileage === null ? 'ยังไม่มีเลขไมล์เดิม กรุณาดูจากหน้าปัด' : `เสนอจาก${context.suggestedSource}: ${mileage} กม.`;
+    document.getElementById('tripHint').textContent = hint;
+    document.getElementById('fuelHint').textContent = `${hint} · กรุณาตรวจเลขไมล์จริงขณะเติมก่อนบันทึก`;
+    if (mileage !== null) { tripForm.elements.startOdometer.value = mileage; fuelForm.elements.odometer.value = mileage; }
+  }
+  google.script.run.withSuccessHandler(c => refresh(c, true)).withFailureHandler(e => message(e.message, true)).getContext();
+
+  function submit(form, method, success) {
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      const button = form.querySelector('button[type=submit]');
+      const payload = Object.fromEntries(new FormData(form).entries());
+      button.disabled = true;
+      google.script.run.withSuccessHandler(result => {
+        button.disabled = false;
+        form.reset();
+        refresh(result.context, true);
+        message(success(result), false);
+      }).withFailureHandler(error => {
+        button.disabled = false;
+        message(error.message || 'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง', true);
+      })[method](payload);
+    });
+  }
+  submit(tripForm, 'saveTrip', result => `บันทึกการใช้รถแล้ว · ระยะทาง ${result.distance} กม.`);
+  submit(fuelForm, 'saveFuel', result => result.efficiency ? `บันทึกเติมน้ำมันแล้ว · อัตราสิ้นเปลือง ${Number(result.efficiency).toFixed(2)} กม./ลิตร` : 'บันทึกเติมน้ำมันแล้ว · รอการเติมเต็มถังครั้งถัดไปเพื่อคำนวณอัตราสิ้นเปลือง');
+</script>
+</body>
+</html>
